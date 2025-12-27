@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-import sql from "../db.js";
+import db from "../db.js";
 
 import AES from "crypto-js/aes.js";
 import Utf8 from "crypto-js/enc-utf8.js";
@@ -112,9 +112,10 @@ app.post("/register", async (req, res) => {
   } else {
     try {
       // Check if user exists
-      const checkResult = await sql`
-        SELECT * FROM users WHERE email = ${req.body.username}
-      `;
+      const [checkResult] = await db.execute(
+        "SELECT * FROM users WHERE email = ?",
+        [req.body.username]
+      );
 
       if (checkResult.length > 0) {
         res.send("<h1>Email already exists</h1>");
@@ -124,15 +125,18 @@ app.post("/register", async (req, res) => {
             console.log("error in hashing", err);
           } else {
             // Insert new user
-            const result = await sql`
-              INSERT INTO users(email, password) 
-              VALUES (${req.body.username}, ${encrypt(
-              hash,
-              process.env.HASHING_SECRET
-            )}) 
-              RETURNING *
-            `;
-            const user = result[0];
+            const [result] = await db.execute(
+              "INSERT INTO users(email, password) VALUES (?, ?)",
+              [req.body.username, encrypt(hash, process.env.HASHING_SECRET)]
+            );
+
+            // Get the inserted user
+            const [newUser] = await db.execute(
+              "SELECT * FROM users WHERE id = ?",
+              [result.insertId]
+            );
+
+            const user = newUser[0];
             req.login(user, (err) => {
               console.log("success");
               res.redirect("/secrets");
@@ -151,9 +155,9 @@ passport.use(
   "local",
   new Strategy(async function verify(username, password, cb) {
     try {
-      const result = await sql`
-        SELECT * FROM users WHERE email = ${username}
-      `;
+      const [result] = await db.execute("SELECT * FROM users WHERE email = ?", [
+        username,
+      ]);
       if (result.length > 0) {
         const user = result[0];
         const storedPassword = decrypt(
@@ -198,16 +202,20 @@ passport.use(
     async (accessToken, refreshToken, profile, cb) => {
       console.log(profile);
       try {
-        const result = await sql`
-          SELECT * FROM users WHERE email = ${profile.email}
-        `;
+        const [result] = await db.execute(
+          "SELECT * FROM users WHERE email = ?",
+          [profile.email]
+        );
         if (result.length === 0) {
-          const NewUser = await sql`
-            INSERT INTO users (email,password) 
-            VALUES (${profile.email}, ${"google"}) 
-            RETURNING *
-          `;
-          cb(null, NewUser[0]);
+          const [insertResult] = await db.execute(
+            "INSERT INTO users (email, password) VALUES (?, ?)",
+            [profile.email, "google"]
+          );
+          const [newUser] = await db.execute(
+            "SELECT * FROM users WHERE id = ?",
+            [insertResult.insertId]
+          );
+          cb(null, newUser[0]);
         } else {
           cb(null, result[0]);
         }
@@ -229,21 +237,20 @@ passport.deserializeUser((user, cb) => {
 // Database Viewer Route - Real-time read-only view of all tables
 app.get("/database", async (req, res) => {
   try {
-    // Get all tables in the public schema
-    const tables = await sql`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name
-    `;
+    // Get all tables in the database
+    const [tables] = await db.execute(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = ?",
+      [process.env.MYSQL_DATABASE || "auth_db"]
+    );
 
     // Get data from each table
     const tableData = {};
     for (const table of tables) {
-      const tableName = table.table_name;
+      const tableName = table.TABLE_NAME || table.table_name;
       try {
-        // Use unsafe for dynamic table names (read-only)
-        const data = await sql.unsafe(`SELECT * FROM "${tableName}" LIMIT 100`);
+        const [data] = await db.execute(
+          `SELECT * FROM \`${tableName}\` LIMIT 100`
+        );
         tableData[tableName] = data;
       } catch (err) {
         tableData[tableName] = { error: err.message };
@@ -269,18 +276,18 @@ app.get("/database", async (req, res) => {
 // API endpoint for real-time data refresh
 app.get("/api/database", async (req, res) => {
   try {
-    const tables = await sql`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name
-    `;
+    const [tables] = await db.execute(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = ?",
+      [process.env.MYSQL_DATABASE || "auth_db"]
+    );
 
     const tableData = {};
     for (const table of tables) {
-      const tableName = table.table_name;
+      const tableName = table.TABLE_NAME || table.table_name;
       try {
-        const data = await sql.unsafe(`SELECT * FROM "${tableName}" LIMIT 100`);
+        const [data] = await db.execute(
+          `SELECT * FROM \`${tableName}\` LIMIT 100`
+        );
         tableData[tableName] = data;
       } catch (err) {
         tableData[tableName] = { error: err.message };
@@ -368,7 +375,7 @@ function generateDatabaseViewHTML(tableData) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Database Viewer - Real-time</title>
+  <title>Database Viewer - MySQL</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -573,11 +580,20 @@ function generateDatabaseViewHTML(tableData) {
       font-size: 12px;
       border: 1px solid rgba(255, 193, 7, 0.3);
     }
+    
+    .mysql-badge {
+      background: rgba(0, 117, 143, 0.3);
+      color: #00758f;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      border: 1px solid rgba(0, 117, 143, 0.5);
+    }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>🗄️ Database Viewer</h1>
+    <h1>🗄️ Database Viewer <span class="mysql-badge">MySQL</span></h1>
     <div class="status">
       <span class="read-only-badge">🔒 Read-Only</span>
       <div class="live-indicator">
@@ -636,8 +652,8 @@ function generateDatabaseViewHTML(tableData) {
 async function startServer() {
   try {
     // Test connection with a simple query
-    await sql`SELECT 1`;
-    console.log("✅ Connected to Database");
+    await db.execute("SELECT 1");
+    console.log("✅ Connected to MySQL Database");
 
     app.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
@@ -645,11 +661,11 @@ async function startServer() {
       console.log(`🗄️  Database Viewer: http://localhost:${port}/database`);
     });
   } catch (err) {
-    console.error("❌ Database connection error:", err.message);
+    console.error("❌ MySQL connection error:", err.message);
     console.error("\n💡 Tips:");
-    console.error("   1. Check your DATABASE_URL in .env");
-    console.error("   2. Use port 6543 for Session Pooler");
-    console.error("   3. Verify your password is correct");
+    console.error("   1. Check your MySQL credentials in .env");
+    console.error("   2. Make sure MySQL server is running");
+    console.error("   3. Verify database exists");
     process.exit(1);
   }
 }

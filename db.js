@@ -1,6 +1,15 @@
-import postgres from "postgres";
+import mysql from "mysql2/promise";
 
-const connectionString = process.env.DATABASE_URL;
-const sql = postgres(connectionString);
+// Create a connection pool for better performance
+const pool = mysql.createPool({
+  host: process.env.MYSQL_HOST || "localhost",
+  port: process.env.MYSQL_PORT || 3306,
+  user: process.env.MYSQL_USER || "root",
+  password: process.env.MYSQL_PASSWORD || "",
+  database: process.env.MYSQL_DATABASE || "auth_db",
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 
-export default sql;
+export default pool;

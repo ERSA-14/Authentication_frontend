@@ -1,111 +1,129 @@
-# Authentication Frontend Project
+# Authentication App with MySQL
 
-A Node.js + Express authentication application with PostgreSQL, Passport.js, and Google OAuth2.
+A Node.js authentication application using Express, Passport.js, and MySQL.
 
-## 📁 Project Structure
+## Features
 
-```
-Authentication_frontend/
-├── src/                    # Server-side code
-│   ├── index.js           # Main application entry point
-│   ├── solution.js        # Solution implementation
-│   ├── routes/            # Route handlers (future)
-│   └── config/            # Configuration files (future)
-├── views/                  # EJS templates
-│   ├── partials/          # Reusable EJS partials
-│   │   ├── header.ejs
-│   │   └── footer.ejs
-│   ├── home.ejs
-│   ├── login.ejs
-│   ├── register.ejs
-│   └── secrets.ejs
-├── public/                 # Static assets
-│   └── css/
-│       └── styles.css
-├── database/              # Database scripts
-│   └── queries.sql
-├── .env                   # Environment variables (not in git)
-├── package.json           # Dependencies and scripts
-└── README.md              # This file
-```
+- ✅ User registration with email/password
+- ✅ User login with local strategy
+- ✅ Google OAuth 2.0 authentication
+- ✅ Password hashing with bcrypt
+- ✅ Password encryption with AES
+- ✅ Session management
+- ✅ Real-time database viewer (read-only)
 
-## 🚀 Getting Started
+## Prerequisites
 
-### Prerequisites
+- Node.js 18+
+- MySQL Server (local or remote)
 
-- Node.js (v14 or higher)
-- PostgreSQL
-- npm or yarn
+## Quick Start
 
-### Installation
-
-1. Install dependencies:
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-2. **Set up your environment variables in `.env`**:
+### 2. Set Up MySQL Database
 
-   ⚠️ **IMPORTANT**: Your `.env` file is currently empty! Copy from the template:
+Connect to your MySQL server and run:
 
-   ```bash
-   cp .env.example .env
-   ```
+```sql
+CREATE DATABASE IF NOT EXISTS auth_db;
 
-   Then edit `.env` and fill in your actual values:
+USE auth_db;
 
-   ```env
-   # Required for session management
-   SESSION_COOKIE_SECRET=your_session_secret_min_32_characters_long
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-   # Required for password encryption
-   HASHING_SECRET=your_hashing_secret_here
+Or run the SQL file:
+```bash
+mysql -u root -p < database/queries.sql
+```
 
-   # Required for Google OAuth (get from https://console.cloud.google.com/)
-   GOOGLE_CLIENT_ID=your_google_client_id_here
-   GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+### 3. Configure Environment Variables
 
-   # Required for Supabase (see SUPABASE_SETUP.md for detailed instructions)
-   SUPABASE_DB_URL=your_supabase_connection_string_here
-   ```
+Copy `.env.example` to `.env` and update values:
 
-3. **Set up Supabase database** (instead of local PostgreSQL):
+```bash
+cp .env.example .env
+```
 
-   📖 **Follow the detailed guide**: [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
+Update your `.env` file:
+```env
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your_password
+MYSQL_DATABASE=auth_db
 
-   Quick summary:
+SESSION_COOKIE_SECRET=your_secret_here
+HASHING_SECRET=your_hashing_secret
+```
 
-   - Create a free Supabase project at [app.supabase.com](https://app.supabase.com/)
-   - Get your connection string from Settings → Database
-   - Run the SQL from `database/queries.sql` in Supabase SQL Editor
-   - Add the connection string to your `.env` file
-
-### Running the Application
-
-Start the server:
+### 4. Start the Server
 
 ```bash
 npm start
 ```
 
-Or for development with auto-restart:
-
+Or for development with auto-reload:
 ```bash
 npm run dev
 ```
 
-## 🔧 Technologies Used
+## Routes
 
-- **Backend**: Node.js, Express.js
-- **View Engine**: EJS
-- **Database**: PostgreSQL
-- **Authentication**: Passport.js (Local Strategy & Google OAuth2)
-- **Security**: bcrypt, express-session, crypto-js
-- **Environment**: dotenv
+| Route | Description |
+|-------|-------------|
+| `/` | Home page |
+| `/login` | Login page |
+| `/register` | Registration page |
+| `/secrets` | Protected secrets page |
+| `/database` | Real-time database viewer (read-only) |
+| `/logout` | Logout |
+| `/auth/google` | Google OAuth login |
 
-## 📝 Notes
+## Database Viewer
 
-- Make sure PostgreSQL is running before starting the application
-- The application uses session-based authentication
-- Google OAuth2 requires proper callback URL configuration
+Access `/database` to view all tables in your MySQL database in real-time. The viewer auto-refreshes every 5 seconds and is read-only for security.
+
+## Project Structure
+
+```
+Authentication_frontend/
+├── db.js                 # MySQL connection pool
+├── src/
+│   └── index.js          # Main application
+├── views/
+│   ├── home.ejs
+│   ├── login.ejs
+│   ├── register.ejs
+│   └── secrets.ejs
+├── public/               # Static files
+├── database/
+│   └── queries.sql       # MySQL schema
+├── .env.example          # Environment template
+└── package.json
+```
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `MYSQL_HOST` | MySQL server host (default: localhost) |
+| `MYSQL_PORT` | MySQL server port (default: 3306) |
+| `MYSQL_USER` | MySQL username (default: root) |
+| `MYSQL_PASSWORD` | MySQL password |
+| `MYSQL_DATABASE` | Database name (default: auth_db) |
+| `SESSION_COOKIE_SECRET` | Secret for session cookies |
+| `HASHING_SECRET` | Secret for password encryption |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `BASE_URL` | Application base URL |
