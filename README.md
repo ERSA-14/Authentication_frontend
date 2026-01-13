@@ -4,13 +4,13 @@ A Node.js authentication application using Express, Passport.js, and MySQL.
 
 ## Features
 
-- ✅ User registration with email/password
-- ✅ User login with local strategy
-- ✅ Google OAuth 2.0 authentication
-- ✅ Password hashing with bcrypt
-- ✅ Password encryption with AES
-- ✅ Session management
-- ✅ Real-time database viewer (read-only)
+- User registration with email/password
+- User login with local strategy
+- Google OAuth 2.0 authentication
+- Password hashing with bcrypt
+- Password encryption with AES
+- Session management
+- Real-time database viewer (read-only)
 
 ## Prerequisites
 
