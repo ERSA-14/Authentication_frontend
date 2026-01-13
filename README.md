@@ -10,7 +10,6 @@ A Node.js authentication application using Express, Passport.js, and MySQL.
 - Password hashing with bcrypt
 - Password encryption with AES
 - Session management
-- Real-time database viewer (read-only)
 
 ## Prerequisites
 
@@ -85,14 +84,8 @@ npm run dev
 | `/` | Home page |
 | `/login` | Login page |
 | `/register` | Registration page |
-| `/secrets` | Protected secrets page |
-| `/database` | Real-time database viewer (read-only) |
 | `/logout` | Logout |
 | `/auth/google` | Google OAuth login |
-
-## Database Viewer
-
-Access `/database` to view all tables in your MySQL database in real-time. The viewer auto-refreshes every 5 seconds and is read-only for security.
 
 ## Project Structure
 
