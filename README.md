@@ -121,17 +121,3 @@ Authentication_frontend/
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 | `BASE_URL` | Application base URL |
 
-
-
-## Author
-**saksham gupta**
-
-- [LinkedIn](https://www.linkedin.com/in/saksham-gupta-ersa/)
-- [GitHub](https://github.com/ERSA-14)
-- [LeetCode](https://leetcode.com/u/ERSA-14/)
-- Email: Saksham22sg@gmail.com
-- Phone: +916358798314
-
----
-
-**Built by Saksham Gupta** • **© 2025**
